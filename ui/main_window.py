@@ -3,6 +3,8 @@ from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 from ui.circular_indicator import CircularIndicator
 from core.voice_response import speak
+from core.voice_recognition import listen_command
+from core.brain import process_command
 import time
 
 
@@ -17,13 +19,9 @@ class TitleBar(QWidget):
             border-top-left-radius: 15px;
             border-top-right-radius: 15px;
         """)
-
         self.title = QLabel("💜 Smriti — AI Desktop Assistant", self)
-        self.title.setStyleSheet("padding-left: 15px; font-family: 'Orbitron'; font-size: 14px;")
-
         self.minBtn = QPushButton("–", self)
         self.closeBtn = QPushButton("✕", self)
-
         for btn in (self.minBtn, self.closeBtn):
             btn.setFixedSize(28, 28)
             btn.setStyleSheet("""
@@ -37,36 +35,36 @@ class TitleBar(QWidget):
                     background: rgba(255,255,255,0.3);
                 }
             """)
-
         layout = QHBoxLayout(self)
         layout.addWidget(self.title)
         layout.addStretch()
         layout.addWidget(self.minBtn)
         layout.addWidget(self.closeBtn)
         layout.setContentsMargins(10, 0, 10, 0)
-
         self.minBtn.clicked.connect(parent.showMinimized)
         self.closeBtn.clicked.connect(parent.close)
         self.oldPos = None
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            self.oldPos = event.globalPos()
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self.oldPos = e.globalPos()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, e):
         if self.oldPos:
-            delta = QPoint(event.globalPos() - self.oldPos)
+            delta = e.globalPos() - self.oldPos
             self.parent().move(self.parent().x() + delta.x(), self.parent().y() + delta.y())
-            self.oldPos = event.globalPos()
+            self.oldPos = e.globalPos()
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, e):
         self.oldPos = None
 
 
-class VoiceThread(QThread):
+class SmritiListener(QThread):
     def run(self):
-        time.sleep(1)  # lil pause before she talks
-        speak("Smriti System Activated - Hello Sumit")
+        while True:
+            command = listen_command()
+            if command:
+                process_command(command)
 
 
 class SmritiWindow(QWidget):
@@ -79,15 +77,12 @@ class SmritiWindow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Add TitleBar
         self.title_bar = TitleBar(self)
         layout.addWidget(self.title_bar)
 
-        # Add glowing indicator
         self.indicator = CircularIndicator(self)
         layout.addWidget(self.indicator, alignment=Qt.AlignCenter)
 
-        # Caption label (typing effect)
         self.caption_label = QLabel("", self)
         self.caption_label.setAlignment(Qt.AlignCenter)
         self.caption_label.setStyleSheet("""
@@ -102,14 +97,14 @@ class SmritiWindow(QWidget):
         """)
         layout.addWidget(self.caption_label, alignment=Qt.AlignCenter)
 
-        # Window appearance
         self.setFixedSize(440, 460)
 
-        # Start typing effect AND voice
-        self.start_typing_animation("✨ Smriti System Activated — Hello Sumit 💜")
+        greeting = "✨ Smriti System Activated — Hello Sumit 💜"
+        self.start_typing_animation(greeting)
+        speak("Smriti system activated. Hello Sumit.")
 
-        self.voice_thread = VoiceThread()
-        self.voice_thread.start()
+        self.listener = SmritiListener()
+        self.listener.start()
 
     def start_typing_animation(self, text):
         self.full_text = text
