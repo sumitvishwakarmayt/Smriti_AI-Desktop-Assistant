@@ -1,4 +1,12 @@
 PyQt5
 SpeechRecognition
-pyttsx3
 pyaudio
+google-generativeai
+python-dotenv
+edge-tts
+simpleaudio
+pydub
+comtypes
+pywin32
+gTTS
+pygame

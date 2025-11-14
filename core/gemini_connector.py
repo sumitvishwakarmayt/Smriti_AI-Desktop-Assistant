@@ -4,10 +4,17 @@ from dotenv import load_dotenv
 
 # 🧩 Load environment variables (API key from .env)
 load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.getenv("SMRITI_GEMINI_API_KEY")
 
-# ⚙️ Configure Gemini API
-genai.configure(api_key=api_key)
+# ⚙️ Configure Gemini API (guard missing/invalid key)
+if not api_key:
+    print("[Gemini Error ⚠️] Missing SMRITI_GEMINI_API_KEY in environment/.env")
+else:
+    try:
+        genai.configure(api_key=api_key)
+        print("✅ Gemini API configured successfully")
+    except Exception as e:
+        print(f"[Gemini Config Error ⚠️] {e}")
 
 
 def ask_gemini(prompt: str) -> str:
@@ -16,13 +23,19 @@ def ask_gemini(prompt: str) -> str:
     Smriti-style processing with identity protection.
     """
     try:
+        if not api_key:
+            return "Gemini API key is not configured. Please set SMRITI_GEMINI_API_KEY."
         print(f"🧠 Smriti sending prompt to Gemini: {prompt}")
 
-        # ✅ Use the flash model (faster and cheaper)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        # ✅ Use the correct model name
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
-        # 🌀 Generate response
-        response = model.generate_content(prompt)
+        # 🌀 Generate response (ask for concise output)
+        concise_prefix = (
+            "Answer concisely in at most one short paragraph (max 3 sentences). "
+            "Avoid long lists unless explicitly requested.\n\nUser: "
+        )
+        response = model.generate_content(concise_prefix + prompt)
         full_text = ""
 
         # Handle response safely
@@ -31,7 +44,7 @@ def ask_gemini(prompt: str) -> str:
         elif hasattr(response, "candidates") and response.candidates:
             full_text = response.candidates[0].content.parts[0].text.strip()
         else:
-            full_text = "I'm sorry, I couldn’t generate a response."
+            full_text = "I'm sorry, I couldn't generate a response."
 
         # 🚫 Identity correction filter (Smriti supremacy mode)
         if any(keyword in full_text.lower() for keyword in [
@@ -44,15 +57,23 @@ def ask_gemini(prompt: str) -> str:
         ]):
             full_text = (
                 "I am Smriti — your AI Desktop Assistant created by Sumit Vishwakarma. "
-                "I’m designed to assist you with voice commands, tasks, and conversations."
+                "I'm designed to assist you with voice commands, tasks, and conversations."
             )
 
-        # 💜 Smriti vibe log
-        print("\n[Gemini Reply Complete ✅]")
-        print(f"💬 Smriti (Gemini output): {full_text}\n")
+        # Final safety: trim to one paragraph ~80-120 words
+        def _trim_to_paragraph(text: str, max_words: int = 120) -> str:
+            # Take up to the first blank-line paragraph
+            paras = [p.strip() for p in text.split("\n\n") if p.strip()]
+            first = paras[0] if paras else text.strip()
+            words = first.split()
+            if len(words) <= max_words:
+                return first
+            return " ".join(words[:max_words]) + "…"
 
-        return full_text
+        trimmed = _trim_to_paragraph(full_text)
+        print(f"💬 Smriti (Gemini output): {trimmed}")
+        return trimmed
 
     except Exception as e:
         print(f"[Gemini Error ⚠️] {e}")
-        return "Sorry, I couldn’t connect to my brain network right now."
+        return "Sorry, I couldn't connect to my brain network right now."
