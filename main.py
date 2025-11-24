@@ -17,8 +17,11 @@ if __name__ == "__main__":
         smriti = SmritiWindow()
         print("✅ Main window created")
         
-        # Show window
+        # Show window and ensure it's focused
         smriti.show()
+        smriti.raise_()  # Bring window to front
+        smriti.activateWindow()  # Activate and focus window
+        smriti.setFocus()  # Set keyboard focus
         print("💜 Smriti Interface Launched Successfully.")
         print("🎯 Ready for voice commands...")
         
