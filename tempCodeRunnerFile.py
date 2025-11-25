@@ -1,6 +1,6 @@
 import sys
 import traceback
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from ui.main_window import SmritiWindow
 
 
@@ -11,7 +11,7 @@ if __name__ == "__main__":
         smriti = SmritiWindow()
         smriti.show()
         print("💜 Smriti Interface Launched Successfully.")
-        sys.exit(app.exec_())
+        sys.exit(app.exec())
     except Exception as e:
         print("❌ Error while launching Smriti:")
         traceback.print_exc()

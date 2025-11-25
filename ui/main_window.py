@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt, QTimer, QPoint, QThread, pyqtSignal
-from PyQt5.QtGui import QColor, QPainter
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit
+from PySide6.QtCore import Qt, QTimer, QPoint, QThread, Signal
+from PySide6.QtGui import QColor, QPainter
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit
 from ui.circular_indicator import CircularIndicator
 
 # Fixed imports - use core. prefix since files are in core folder
@@ -250,7 +250,7 @@ class SmritiListener(QThread):
 
 
 class SmritiWindow(QWidget):
-    captionSignal = pyqtSignal(str)
+    captionSignal = Signal(str)
     
     def __init__(self):
         super().__init__()
