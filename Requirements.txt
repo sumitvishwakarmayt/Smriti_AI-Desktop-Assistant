@@ -1,10 +1,9 @@
-PyQt5
+PySide6
 SpeechRecognition
 pyaudio
 google-generativeai
 python-dotenv
 edge-tts
-simpleaudio
 pydub
 comtypes
 pywin32

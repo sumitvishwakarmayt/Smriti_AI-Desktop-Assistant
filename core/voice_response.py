@@ -2,9 +2,7 @@ import threading
 from typing import Optional, Callable
 from gtts import gTTS
 from io import BytesIO
-from pydub import AudioSegment
-from pydub.utils import which as which_ffmpeg
-import simpleaudio as sa
+import pygame
 import time
 from tempfile import NamedTemporaryFile
 import os
@@ -16,9 +14,10 @@ class VoiceResponder:
             print("🔧 Initializing gTTS responder...")
             self.is_speaking_flag = False
             self.caption_callback: Optional[Callable[[str], None]] = None
-            self._current_playback: Optional[sa.PlayObject] = None
-            self._current_backend: str = "pydub"  # or "pygame"
             self._pygame_ready: bool = False
+            # Initialize pygame mixer
+            pygame.mixer.init()
+            self._pygame_ready = True
             print("✅ gTTS responder ready")
         except Exception as e:
             print(f"❌ TTS init error: {e}")
@@ -43,56 +42,28 @@ class VoiceResponder:
                 mp3_buf.seek(0)
 
                 try:
-                    # Prefer pydub+simpleaudio if ffmpeg available
-                    if which_ffmpeg("ffmpeg") is None and which_ffmpeg("ffprobe") is None:
-                        raise RuntimeError("ffmpeg not found")
-
-                    segment = AudioSegment.from_file(mp3_buf, format="mp3")
-                    raw_data = segment.raw_data
-                    num_channels = segment.channels
-                    bytes_per_sample = segment.sample_width
-                    sample_rate = segment.frame_rate
-
-                    # Stop any current playback first
-                    if self._current_playback is not None:
-                        try:
-                            self._current_playback.stop()
-                        except Exception:
-                            pass
-
-                    # Play audio via simpleaudio
-                    self._current_backend = "pydub"
-                    self._current_playback = sa.play_buffer(
-                        raw_data,
-                        num_channels,
-                        bytes_per_sample,
-                        sample_rate,
-                    )
-                    self._current_playback.wait_done()
-                except Exception as decode_err:
-                    # Fallback to pygame to play MP3 directly without ffmpeg
+                    # Use pygame to play MP3 directly
+                    if not self._pygame_ready:
+                        pygame.mixer.init()
+                        self._pygame_ready = True
+                    
+                    # Write mp3 to temp file for pygame
+                    with NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                        tmp.write(mp3_buf.getvalue())
+                        tmp_path = tmp.name
+                    
+                    pygame.mixer.music.load(tmp_path)
+                    pygame.mixer.music.play()
+                    # Wait for playback to finish
+                    while pygame.mixer.music.get_busy() and self.is_speaking_flag:
+                        time.sleep(0.1)
+                    # Cleanup
                     try:
-                        import pygame
-                        if not self._pygame_ready:
-                            pygame.mixer.init()
-                            self._pygame_ready = True
-                        # Write mp3 to temp file for pygame
-                        with NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-                            tmp.write(mp3_buf.getvalue())
-                            tmp_path = tmp.name
-                        self._current_backend = "pygame"
-                        pygame.mixer.music.load(tmp_path)
-                        pygame.mixer.music.play()
-                        # Wait for playback to finish
-                        while pygame.mixer.music.get_busy() and self.is_speaking_flag:
-                            time.sleep(0.1)
-                        # Cleanup
-                        try:
-                            os.remove(tmp_path)
-                        except Exception:
-                            pass
-                    except Exception as pg_err:
-                        print(f"❌ Both playback backends failed. pydub error: {decode_err}, pygame error: {pg_err}")
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
+                except Exception as play_err:
+                    print(f"❌ Audio playback error: {play_err}")
                 finally:
                     self.is_speaking_flag = False
                     print("✅ Speech completed")
@@ -106,19 +77,8 @@ class VoiceResponder:
     def stop(self):
         try:
             print("🛑 Stopping current speech...")
-            if self._current_backend == "pydub":
-                if self._current_playback is not None:
-                    try:
-                        self._current_playback.stop()
-                    except Exception:
-                        pass
-            elif self._current_backend == "pygame":
-                try:
-                    import pygame
-                    if self._pygame_ready:
-                        pygame.mixer.music.stop()
-                except Exception:
-                    pass
+            if self._pygame_ready:
+                pygame.mixer.music.stop()
             self.is_speaking_flag = False
             print("🔇 Speech stopped successfully")
         except Exception as e:

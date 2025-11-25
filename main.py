@@ -1,6 +1,6 @@
 import sys
 import traceback
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from ui.main_window import SmritiWindow
 
 
@@ -11,7 +11,7 @@ if __name__ == "__main__":
         
         # Create application
         app = QApplication(sys.argv)
-        print("✅ PyQt5 app created")
+        print("✅ PySide6 app created")
         
         # Create main window
         smriti = SmritiWindow()
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         print("🎯 Ready for voice commands...")
         
         # Run application
-        exit_code = app.exec_()
+        exit_code = app.exec()
         print("👋 Smriti application closed")
         sys.exit(exit_code)
         

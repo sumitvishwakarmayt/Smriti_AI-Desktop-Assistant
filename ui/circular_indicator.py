@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt, QTimer, QRectF, QPointF
-from PyQt5.QtGui import QColor, QPainter, QRadialGradient, QPainterPath
-from PyQt5.QtWidgets import QWidget
+from PySide6.QtCore import Qt, QTimer, QRectF, QPointF
+from PySide6.QtGui import QColor, QPainter, QRadialGradient, QPainterPath
+from PySide6.QtWidgets import QWidget
 import math
 
 
